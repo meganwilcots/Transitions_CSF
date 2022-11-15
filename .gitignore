@@ -37,3 +37,11 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+## Ignore rproject file
+*.Rproj
+*.csv
+
+## Ignore folders
+## data/rawdata/filename
+
