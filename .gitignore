@@ -41,6 +41,7 @@ vignettes/*.pdf
 ## Ignore rproject file
 *.Rproj
 *.csv
+.DS_Store
 
 ## Ignore folders
 ## data/rawdata/filename
