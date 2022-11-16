@@ -46,3 +46,6 @@ vignettes/*.pdf
 ## Ignore folders
 ## data/rawdata/filename
 
+## Ignore test files
+
+*_test.R

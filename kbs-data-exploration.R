@@ -30,15 +30,16 @@ spei_KBS6=spei(kbs_monthly_MET_ts[,"BAL"], 6)
 spei_KBS6_df=try_data_frame(spei_KBS6$fitted)
 colnames(spei_KBS6_df)=c("time","SPEI_6m")
 head(spei_KBS6_df)
-spei_KBS6_df$year=format(as.Date(spei_KBS6_df$time),"%Y")
-spei_KBS6_df$month=format(as.Date(spei_KBS6_df$time),"%m")
+spei_KBS6_df$year=as.numeric(format(as.Date(spei_KBS6_df$time),"%Y"))
+spei_KBS6_df$month=as.numeric(format(as.Date(spei_KBS6_df$time),"%m"))
 spei_KBS6_df$time=NULL
 head(spei_KBS6_df)
 
 #Annual precip and max temp
 head(kbs_monthly_MET)
 kbs_monthly_MET_annual=kbs_monthly_MET|>group_by(year)|>
-  summarise(air_temp_max_max=max(air_temp_max), annual_precip=sum(precipitation))
+  summarise(air_temp_max_max=max(air_temp_max), annual_precip=sum(precipitation),
+            air_temp_max_mean=mean(air_temp_max))
 
 
 #https://lter.kbs.msu.edu/datatables/686
@@ -48,19 +49,19 @@ source("Data_cleaning/kbs_early_succ_microplot_msce_cleaning.R") # extra column 
 
 head(KBS_spp_clean)
 dim(KBS_spp_clean)
-#4103   20
+#3991   19
 colnames(KBS_spp_clean)
 unique(KBS_spp_clean$nadd)
-unique(KBS_spp_clean$disturbance)
-#Remove disturbed and nfert
+
+#Remove nfert
 
 KBS_spp_clean_control=subset(KBS_spp_clean, nadd=="unfertilized")
 dim(KBS_spp_clean_control)
-#424  20
+#2187   19
 
-#Summarize 
+#Summarize abundance (pers spp biomass) to ANPP 
 
-KBS_spp_clean_control_tot=KBS_spp_clean_control|>group_by(year,month,plot,nadd,uniqueID,disturbance)|>
+KBS_spp_clean_control_tot=KBS_spp_clean_control|>group_by(year,month,plot,nadd,uniqueID)|>
   summarise(ANPP=sum(abundance))
 dim(KBS_spp_clean_control_tot)
 summary(as.numeric(KBS_spp_clean_control_tot$year))
@@ -70,19 +71,20 @@ summary(as.numeric(KBS_spp_clean_control_tot$year))
 KBS_spp_clean_control_tot_temp_precip=merge(KBS_spp_clean_control_tot, kbs_monthly_MET_annual,
                                             by="year" )
 head(KBS_spp_clean_control_tot_temp_precip)
-KBS_spp_clean_control_tot_temp_precip=KBS_spp_clean_control_tot_temp_precip|>mutate(ANPP_scale=scale(ANPP), air_temp_max_max_scale=scale(air_temp_max_max), annual_precip_scale=scale(annual_precip))
+KBS_spp_clean_control_tot_temp_precip=KBS_spp_clean_control_tot_temp_precip|>
+  mutate(ANPP_scale=scale(ANPP), air_temp_max_mean_scale=scale(air_temp_max_mean), annual_precip_scale=scale(annual_precip))
 
 dim(KBS_spp_clean_control_tot_temp_precip)
 
 
 
-kbs_temp_precip_mod=lme(ANPP_scale~air_temp_max_max_scale+annual_precip_scale,
+kbs_temp_precip_mod=lme(ANPP_scale~air_temp_max_mean_scale+annual_precip_scale,
                     data=KBS_spp_clean_control_tot_temp_precip,
                     random=~1|plot,method="ML")
 
 summary(kbs_temp_precip_mod)
 
-summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_max_max")])
+summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_max_mean")])
 
 # Extract model components
 kbs_temp_precip_mod_est <- scicomptools::nlme_extract(fit = kbs_temp_precip_mod)
@@ -92,11 +94,27 @@ kbs_temp_precip_mod_est
 
 
 KBS_rain_temp_sub=KBS_spp_clean_control_tot_temp_precip[!duplicated(KBS_spp_clean_control_tot_temp_precip$year),]
-ggplot(KBS_rain_temp_sub|>pivot_longer(cols = c(annual_precip,air_temp_max_max),names_to = "measure",values_to = "value"), aes(x=value))+geom_density()+facet_wrap(~measure,scales = "free")
+ggplot(KBS_rain_temp_sub|>pivot_longer(cols = c(annual_precip,air_temp_max_mean),names_to = "measure",values_to = "value"), aes(x=value))+geom_density()+facet_wrap(~measure,scales = "free")
+
+
+kbs_temp_precip_LOG_mod=lme(log(ANPP)~log(air_temp_max_mean)+log(annual_precip),
+                        data=KBS_spp_clean_control_tot_temp_precip,
+                        random=~1|plot,method="ML")
+
+summary(kbs_temp_precip_LOG_mod)
+
+summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_max_mean")])
+
+# Extract model components
+kbs_temp_precip_LOG_mod_est <- scicomptools::nlme_extract(fit = kbs_temp_precip_LOG_mod)
+
+# Take a look
+kbs_temp_precip_LOG_mod_est
+
 
 
 #Identify the anomalies 
-quantile(KBS_rain_temp_sub$air_temp_max_max, c(0.05, 0.95)) ## find 5th and 9th percentile
+quantile(KBS_rain_temp_sub$air_temp_max_mean, c(0.05, 0.95)) ## find 5th and 9th percentile
 quantile(KBS_rain_temp_sub$annual_precip, c(0.05, 0.95))
 KBS_spei_sub$anomalies <- ifelse(KBS_spei_sub$SPEI_6m >= 1.763899, "anomaly",
                                  ifelse(KBS_spei_sub$SPEI_6m <= -1.384875, "anomaly", "normal")) ## classify 
@@ -144,6 +162,9 @@ KBS_spei_sub$anomalies <- ifelse(KBS_spei_sub$SPEI_6m >= 1.763899, "anomaly",
 
 ggplot(KBS_spei_sub, aes(x=SPEI_6m))+geom_density()+geom_dotplot(aes(color=anomalies,fill=anomalies))
 
+#Log log model
+
+
 #####Top five taxa####
 colnames(KBS_spp_clean_control)
 
@@ -162,6 +183,7 @@ kbs_spp_biomass_tot[order(kbs_spp_biomass_tot$spp_bio_tot,decreasing = T),][1:5,
 KBS_spp_clean_control_tops<-
   KBS_spp_clean_control[KBS_spp_clean_control$species%in%kbs_spp_biomass_tot[order(kbs_spp_biomass_tot$spp_bio_tot,decreasing = T),][1:6,]$species,]
 
-
 ggplot(KBS_spp_clean_control_tops,aes(x=as.numeric(year),y=abundance))+
   geom_point()+facet_wrap(~species,scales = "free_y")
+
+
