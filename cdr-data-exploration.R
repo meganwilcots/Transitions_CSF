@@ -23,6 +23,13 @@ group_1900$year <- correct_years_1900 ## put correct years into df of dates that
 cdr_climate_final <- rbind(group_1900, group_2000) ## put the two dfs back together -- should all be correct dates
 names(cdr_climate_final)
 
+##inherited from cdr_e001... cleaning script
+cdr_clean_no_na <- na.omit(cdr_clean)
+cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
+cdr_anpp_full <- cdr_clean_no_na %>%
+  group_by(year, site, plot, nadd, ncess, uniqueID) %>%
+  summarize(NPP = sum(abundance)) 
+
 ### initial analyses -- skip all these!!! ####
 
 cdrclim <- cdr_climate_final[,c(1,4,7,10)] ## ignore for now
@@ -40,11 +47,7 @@ cdrclim1$year <- as.numeric(cdrclim1$year)
 density_plot <- ggplot(cdrclim1, aes(MAP_mm)) +
   geom_density() +
   theme_bw()
-cdr_clean_no_na <- na.omit(cdr_clean)
-cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
-cdr_anpp_full <- cdr_clean_no_na %>%
-  group_by(year, site, plot, nadd, ncess, uniqueID) %>%
-  summarize(NPP = sum(abundance)) 
+
   
 cdr_clim_anpp_full <- left_join(cdrclim1, cdr_anpp_full, by = "year") ##use for models
 cdr_clim_anpp_full <- na.omit(cdr_clim_anpp_full)
