@@ -1,5 +1,5 @@
 ## ------------------------------ ##
-      # Stat Extract Function
+      # Statistics Extraction
 ## ------------------------------ ##
 # Written by Nick J Lyon
 
@@ -11,7 +11,7 @@ librarian::shelf(tidyverse, nlme, NCEAS/scicomptools)
 rm(list = ls())
 
 ## ------------------------------ ##
-     # Pre-Function Stuff ----
+      # Actual Workflow ----
 ## ------------------------------ ##
 
 # Read in data
