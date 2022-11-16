@@ -102,3 +102,37 @@ ggplot(knz_standardized, aes(x = MAP_stand, y = NPP_stand)) +
   geom_point() +
   geom_smooth(method = "lm", se = T) +
   theme_bw()
+
+
+### test w/ data in the google sheet
+
+test_data <- tibble(site = c("CDR", "KBS", "KNZ"),
+                    coef_temp = c(-0.033, -0.102, 0.090),
+                    se_temp = c(0.031, 0.066, 0.014),
+                    coef_precip = c(0.115, 0.036, 0.186),
+                    se_precip = c(0.031, 0.066, 0.013),
+                    coef_spei = c(-0.098, -0.044, 0.083),
+                    se_spei = c(0.033, 0.066, 0.013),
+                    MAP = c(831.052, 905.7, 796.1),
+                    max_temp = c(12.5, 34.8, 19.3),
+                    mean_spei = c(-0.616, 0.207, 0.015))
+
+ggplot(test_data, aes(x = MAP, y = coef_precip, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 1.4) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ylab("Coef. standardized(NPP ~ MAP)") +
+  xlab("MAP")
+
+ggplot(test_data, aes(x = max_temp, y = coef_temp, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_temp - se_temp, ymax = coef_temp + se_temp), width = 1) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2)
+
+ggplot(test_data, aes(x = mean_spei, y = coef_spei, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_spei - se_spei, ymax = coef_spei + se_spei), width = 0.05) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2)
