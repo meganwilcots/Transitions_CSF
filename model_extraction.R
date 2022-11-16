@@ -19,7 +19,7 @@ df <- read.csv(file = file.path("data", "exp_clim.csv"))
 
 # Fit model
 my_fit <- nlme::lme(tot.cover ~ airtemp_max + precip, data = df, 
-            random = ~1|uniqueID, method = "ML")
+                    random = ~1|uniqueID, method = "ML")
 
 # Extract model components
 est <- scicomptools::nlme_extract(fit = my_fit)
