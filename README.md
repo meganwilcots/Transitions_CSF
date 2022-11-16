@@ -15,7 +15,7 @@ https://lternet.edu/working-groups/ecosystem-transitions/
 
 ## Project Main Github Repository
 
-[link](https://github.com/lter/lterwg-transitions)
+https://github.com/lter/lterwg-transitions
 
 ## Supplementary Resources
 
