@@ -23,8 +23,8 @@ drive_download(file = subset(files_ls,name=="Climate sensitivity"),
                overwrite = TRUE,
                type="xlsx")#Overwrite is in included so you can replace older versions
 
-
-Climate_sensitivity_raw<-read_xl_sheets(file = "raw_data_GDrive/Climate_sensitivity.xlsx")
+library(readxl)
+Climate_sensitivity_raw<-read_xlsx("raw_data_GDrive/Climate_sensitivity.xlsx", sheet = "Log_log")
 
 Climate_sensitivity_scale<-Climate_sensitivity_raw$Scaled
 
@@ -60,7 +60,7 @@ ggplot(Climate_sensitivity_scale, aes(x = mean_spei, y = coef_spei, color = site
 #Log-log
 
 Climate_sensitivity_log<-Climate_sensitivity_raw$Log_log
-
+Climate_sensitivity_log <- Climate_sensitivity_raw
 colnames(Climate_sensitivity_log)<-str_replace_all(colnames(Climate_sensitivity_log)," ","_")
 colnames(Climate_sensitivity_log)
 
