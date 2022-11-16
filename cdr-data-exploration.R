@@ -2,25 +2,30 @@
 setwd("~/Desktop/lter transitions data/")
 cdr_climate <- read.csv("cdr_weather.csv")
 library(tidyverse)
+
+#### data cleaning to get from Cedar Creek output (weird date format) to useable output ###
 cdr_climate$newdate <- strptime(as.character(cdr_climate$Date), "%m/%d/%y")
 cdr_climate$nd <- format(cdr_climate$newdate, "%Y-%m-%d")
 tmp <- as.POSIXlt(cdr_climate$nd, format = "%Y-%m-%d")
 tmp$yday### R automatically makes years ending in 00 - 68 to 2000s, so need to change 62 - 68 to 1900s
 cdr_climate$julian_day <- tmp$yday
-cdr_climate$year <- substr(cdr_climate$nd, 1, 4) ##just the year
-cdr_climate$month <- substr(cdr_climate$nd, 6, 7) ##just the month
+cdr_climate$year <- substr(cdr_climate$nd, 1, 4) ##pull just the year from the date
+cdr_climate$month <- substr(cdr_climate$nd, 6, 7) ##just the month from the date
 
-group_1900 <- filter(cdr_climate, year > 2017)
-years_1900 <- group_1900[,10]
-correct_years_1900 <- gsub("20", "19", years_1900)
-group_2000 <- filter(cdr_climate, year <= 2017)
+group_1900 <- filter(cdr_climate, year > 2017) ## R defaults to 2-digit years form 00-68 to be in the 2000s -- fixing to be 1900s
+## 2017 is the last year of data, so anything greater than 2017 should be from the 1900s
+years_1900 <- group_1900[,10] ## extracting year column
+correct_years_1900 <- gsub("20", "19", years_1900) ## changing them from 2000s to 1900s (e.g. 2062 to 1962)
+group_2000 <- filter(cdr_climate, year <= 2017) ##making df of dates that don't need to be corrected
 
-group_1900$year <- correct_years_1900
+group_1900$year <- correct_years_1900 ## put correct years into df of dates that needed to be corrected
 
-cdr_climate_final <- rbind(group_1900, group_2000)
+cdr_climate_final <- rbind(group_1900, group_2000) ## put the two dfs back together -- should all be correct dates
 names(cdr_climate_final)
 
-cdrclim <- cdr_climate_final[,c(1,4,7,10)]
+### initial analyses -- skip all these!!! ####
+
+cdrclim <- cdr_climate_final[,c(1,4,7,10)] ## ignore for now
 cdrtemp <- cdr_climate_final[,c(1,2,9,10)]
 
 #### precip data ####
@@ -493,6 +498,8 @@ total_anpp_plot <- ggplot() +
        y="ANPP") 
 
 
+
+### START HERE ####
 #### looking at ANPP vs. MAT, MAP, and SPEI ####
 names(cdr_climate_final)
 
