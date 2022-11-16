@@ -37,9 +37,9 @@ KBS_spp <- KBS_split_spp
 ## For the date is formatted as sampling date rather than year
 ## Extract the year from the character string
 
-KBS_spp$Year <- format(as.Date(KBS_spp$sample_date),format = "%Y")
+KBS_spp$Year <- as.numeric(format(as.Date(KBS_spp$sample_date),format = "%Y"))
 
-KBS_spp$month <- format(as.Date(KBS_spp$sample_date),format = "%m")
+KBS_spp$month <- as.numeric(format(as.Date(KBS_spp$sample_date),format = "%m"))
 
 
 ### Add ExpYear
@@ -52,19 +52,27 @@ rm( df)
 ### Originally there were two sampling dates per year
 ### We will only use the sampling at the end of the summer
 
+KBS_spp_month_year=subset(KBS_spp,disturbed=="undisturbed")[!duplicated(subset(KBS_spp,disturbed=="undisturbed")$sample_date),]
 
-KBS_spp<-KBS_spp|>
-  group_by(Year,treatment,replicate,fertilized)|>
+
+KBS_spp_month_year_slice<-KBS_spp_month_year|>group_by(Year,treatment,replicate,fertilized)|>
   top_n(1,as.Date(sample_date))
 
+#filtered out the disturbed plots
+KBS_SPP<-KBS_spp[KBS_spp$sample_date%in%KBS_spp_month_year_slice$sample_date&
+                   KBS_spp$disturbed=="undisturbed",]
+
+
+#remove dead material from the data
+KBS_SPP=subset(KBS_SPP,species!="Surface Litter"&species!="Standing Dead")
 
 
 
 ## Clean up data kbs early succession
 
-KBS_spp_clean <- KBS_spp %>%
+KBS_spp_clean <- KBS_SPP %>%
   tibble::as_tibble() %>%
-  dplyr::select(-method, -sample_date) %>%  # Remove unwanted columns
+  dplyr::select(-method, -sample_date,-disturbed) %>%  # Remove unwanted columns
   tibble::as_tibble() %>%
   ## format column names to match the rest of the datasets
   dplyr::mutate(site = "kbs",
@@ -83,18 +91,18 @@ KBS_spp_clean <- KBS_spp %>%
                 burn = "0",
                 rainfall = "0", 
                 warm = "0",
-                disturbance=disturbed, #plots were tilled or untilled
+                #disturbance=disturbed, #plots were tilled or untilled
                 unitAbund = "biomass_g_m2",
                 scaleAbund = area_sampled, 
                 species = species,
                 uniqueID = paste(site, field, project, plot, subplot, sep = "_")) %>%
   dplyr::select(year, month,site, field, project, plot, subplot, uniqueID, 
-                carbon, nadd, ncess, fence, burn, rainfall, warm,disturbance,
+                carbon, nadd, ncess, fence, burn, rainfall, warm,#disturbance,
                 species, abundance, unitAbund, scaleAbund) 
 
 ## Check treatment
 
 
 
-rm(KBS_spp, KBS_split_spp, files_ls)
+rm(KBS_spp, KBS_SPP,KBS_split_spp, files_ls, KBS_spp_month_year,KBS_spp_month_year_slice)
 
