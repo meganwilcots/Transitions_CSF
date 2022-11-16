@@ -32,13 +32,16 @@ sevwen<-read.table("raw_data_GDrive/SEV_wenndex_biomass_2021.csv", sep=",",heade
 unique(sevwen$site)
 # only 1 site
 
+#Twice a year sampling
+unique(sevwen$season)
+sevwen$seas_num<-as.numeric(as.character(recode_factor(sevwen$season,fall="0.5",spring="0")))
+sevwen$year_seas<-sevwen$year+sevwen$seas_num
+
 ### Add ExpYear
-unique(sevwen$year)
-#only include up to 2019 because precip treatments changed in 2020
-sevwen<-subset(sevwen,year<2020)
-df <- data.frame(year= 2006:2019,
-                 ExpYear= 1:14)
-sevwen <- merge.data.frame(sevwen, df, by="year" )
+df <- data.frame(year_seas= seq(from=min(sevwen$year_seas),to=max(sevwen$year_seas), by=0.5),
+                 ExpYear= seq(from=1,to=(max(sevwen$year_seas)-min(sevwen$year_seas)+1), by=0.5))
+sevwen <- merge.data.frame(sevwen, df, by="year_seas" )
+
 
 ## Split up the different types of treatments into separate columns
 unique(sevwen$treatment)
@@ -63,7 +66,7 @@ sev_wen_clean <- sevwen %>%
   dplyr::mutate(site = "sev",
                 project = "wen",
                 field = project,
-                year = year,
+                year = year_seas, #to deal with fall/spring,
                 expyear = ExpYear,
                 plot = plot, 
                 subplot = quad,   # check if this does make sense
