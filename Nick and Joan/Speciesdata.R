@@ -95,7 +95,8 @@ occ_poly <- occ_pts %>%
   sf::st_convex_hull(x = .)
 
 # Plot polygon
-plot(occ_poly, axes = T)
+base::plot(occ_poly, axes = T, reset = F)
+base::plot(occ_pts, add = T, pch = 20, col = "gray45")
 
 # Export polygon as a shapefile
 sf::st_write(obj = occ_poly, delete_layer = T,
