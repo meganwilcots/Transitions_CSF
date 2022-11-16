@@ -85,6 +85,6 @@ sev_wen_clean <- sevwen %>%
                 carbon, nadd, ncess, fence, burn, rainfall, warm,
                 species, fungroup, abundance, unitAbund, scaleAbund) 
 
-rm(df, treat.df, sevwen)
+rm(files_ls, df, treat.df, sevwen)
 
 #write.csv(sev_wen_clean, "../data/sev_wen_clean.csv")
