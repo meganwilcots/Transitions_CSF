@@ -525,7 +525,7 @@ cdr_full <- filter(cdr_full, year != 1962)
 cdr_full1 <- cdr_full %>%
   group_by(month, year) %>%
   summarize(MAP_mm = sum(25.4*Precip.inches.),
-            max_temp_c = mean((MaxTemp.degF. - 32)*(5/9)))
+            max_temp_c = max((MaxTemp.degF. - 32)*(5/9)))
 library(SPEI)
 
 #Calculate balances
@@ -551,11 +551,12 @@ spei_cdr6_df$time=NULL
 
 august_spei <- filter(spei_cdr6_df, month == "08")
 
-cdr_full3 <- cdr_full %>%
+cdr_full3 <- cdr_full1 %>%
   group_by(year) %>%
-  summarize(MAP_mm = sum(25.4*Precip.inches.),
-            max_temp_c = mean((MaxTemp.degF. - 32)*(5/9)))
-
+  summarize(MAP_mm = sum(MAP_mm),
+            max_temp_c = mean(max_temp_c))
+cdr_full3$year <- as.numeric(cdr_full3$year)
+august_spei$year <- as.numeric(august_spei$year)
 cdr_all <- left_join(cdr_full3, august_spei, by = "year")  
 cdr_all <- na.omit(cdr_all)
 
@@ -563,8 +564,9 @@ cdr_clean_no_na <- na.omit(cdr_clean)
 cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
 cdr_anpp_control <- cdr_clean_no_na %>%
   filter(species != "miscellaneous litter") %>%
+  mutate(abund = abundance/0.3) %>%
   group_by(year, site, plot, nadd, ncess, uniqueID) %>%
-  summarize(NPP = sum(abundance)) %>%
+  summarize(NPP = sum(abund)) %>%
   filter(nadd == 0)
 
 cdr_all$year <- as.numeric(cdr_all$year)
@@ -609,23 +611,23 @@ ggplot(cdr_standardized, aes(x = log(max_temp_c), y = log(NPP))) +
 
 
 
-test_data <- tibble(site = c("CDR", "KBS", "KNZ"),
-                    coef_temp = c(-0.234744, 1.259432, 0.4367869),
-                    se_temp = c(0.2021094, 0.715985, 0.1569016),
-                    coef_precip = c(0.328784, 1.28423, 0.4598646),
-                    se_precip = c(0.0673467, 0.1926285, 0.0440475),
-                    MAP = c(831.052, 905.7, 796.1),
-                    max_temp = c(12.5, 34.8, 19.3))
+test_data <- tibble(site = c("CDR", "KBS", "KNZ", "SEV"),
+                    coef_temp = c(-0.234744, 1.259432, 0.4367869, -1.570645),
+                    se_temp = c(0.2021094, 0.715985, 0.1569016, 0.5091116),
+                    coef_precip = c(0.328784, 1.28423, 0.4598646, 0.333346),
+                    se_precip = c(0.0673467, 0.1926285, 0.0440475, 0.0223939),
+                    MAP = c(831.052, 905.7, 796.1, 97.495),
+                    max_temp = c(12.5, 24.18, 19.3, 23.51745))
 ggplot(test_data, aes(x = MAP, y = coef_precip, color = site)) +
-  geom_point(size = 2) +
-  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 1.4) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 3) +
   theme_bw() +
   geom_hline(yintercept = 0, linetype = 2) +
   ylab("Coef. standardized(NPP ~ MAP)") +
   xlab("MAP")
 
 ggplot(test_data, aes(x = max_temp, y = coef_temp, color = site)) +
-  geom_point(size = 2) +
-  geom_errorbar(aes(ymin = coef_temp - se_temp, ymax = coef_temp + se_temp), width = 1) +
+  geom_point(size = 5) +
+  geom_errorbar(aes(ymin = coef_temp - se_temp, ymax = coef_temp + se_temp), width = 0.7) +
   theme_bw() +
   geom_hline(yintercept = 0, linetype = 2)
