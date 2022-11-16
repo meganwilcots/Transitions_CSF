@@ -1,10 +1,22 @@
-##need to run cdr data cleaning script before this one
-setwd("~/Desktop/lter transitions data/")
-cdr_climate <- read.csv("cdr_weather.csv")
-cdr_clean <- read.csv("cdr_clean.csv")
-library(tidyverse)
 
-#### data cleaning to get from Cedar Creek output (weird date format) to useable output ###
+### Import data ####
+library(googledrive); library(httpuv); library(tidyverse)
+dir.create("raw_data_GDrive", showWarnings = F)
+files_ls=drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYHapP7H0J3gXXkUf6-nmqL"))
+
+#Download the dataset based on the file name in the directory
+drive_download(file = subset(files_ls,name=="cdr_clean.csv"),
+               path = "raw_data_GDrive/cdr_clean.csv",
+               overwrite = TRUE)#Overwrite is in included so you can replace older versions
+drive_download(file = subset(files_ls,name=="cdr_weather.csv"),
+               path = "raw_data_GDrive/cdr_weather.csv",
+               overwrite = TRUE)
+cdr_climate <- read.csv("raw_data_GDrive/cdr_weather.csv", sep=",",header = T)
+cdr_clean <- read.csv("raw_data_GDrive/cdr_clean.csv", sep=",",header = T)
+
+
+
+#### data cleaning to get from Cedar Creek output (weird date format) to useable output ####
 cdr_climate$newdate <- strptime(as.character(cdr_climate$Date), "%m/%d/%y")
 cdr_climate$nd <- format(cdr_climate$newdate, "%Y-%m-%d")
 tmp <- as.POSIXlt(cdr_climate$nd, format = "%Y-%m-%d")
@@ -28,6 +40,7 @@ names(cdr_climate_final)
 cdr_clean_no_na <- na.omit(cdr_clean)
 cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
 cdr_anpp_full <- cdr_clean_no_na %>%
+  filter(species != "miscellaneous litter" ) %>%
   group_by(year, site, plot, nadd, ncess, uniqueID) %>%
   summarize(NPP = sum(abundance)) 
 
@@ -549,6 +562,7 @@ cdr_all <- na.omit(cdr_all)
 cdr_clean_no_na <- na.omit(cdr_clean)
 cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
 cdr_anpp_control <- cdr_clean_no_na %>%
+  filter(species != "miscellaneous litter") %>%
   group_by(year, site, plot, nadd, ncess, uniqueID) %>%
   summarize(NPP = sum(abundance)) %>%
   filter(nadd == 0)
@@ -568,7 +582,9 @@ library(nlme)
 mod_tp <- lme(NPP_stand ~ MAP_stand + temp_stand, random = ~1|uniqueID, data = cdr_standardized)
 mod_spei <- lme(NPP_stand ~ SPEI_6m, random = ~1|uniqueID, data = cdr_standardized)
 
-summary(mod_tp)
+mod_tp1 <- lme(log(NPP) ~ log(MAP_mm) + log(max_temp_c), random = ~1|uniqueID, data = cdr_standardized)
+
+summary(mod_tp1)
 summary(mod_spei)
 library(vegan)
 
@@ -586,8 +602,30 @@ ggplot(cdr_standardized, aes(x = SPEI_6m, y = NPP)) +
   geom_smooth(method = "lm", se = T) +
   theme_bw()
 
-ggplot(cdr_standardized, aes(x = MAP_stand, y = NPP)) +
+ggplot(cdr_standardized, aes(x = log(max_temp_c), y = log(NPP))) +
   geom_point() +
   geom_smooth(method = "lm", se = T) +
   theme_bw()
 
+
+
+test_data <- tibble(site = c("CDR", "KBS", "KNZ"),
+                    coef_temp = c(-0.234744, 1.259432, 0.4367869),
+                    se_temp = c(0.2021094, 0.715985, 0.1569016),
+                    coef_precip = c(0.328784, 1.28423, 0.4598646),
+                    se_precip = c(0.0673467, 0.1926285, 0.0440475),
+                    MAP = c(831.052, 905.7, 796.1),
+                    max_temp = c(12.5, 34.8, 19.3))
+ggplot(test_data, aes(x = MAP, y = coef_precip, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 1.4) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ylab("Coef. standardized(NPP ~ MAP)") +
+  xlab("MAP")
+
+ggplot(test_data, aes(x = max_temp, y = coef_temp, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_temp - se_temp, ymax = coef_temp + se_temp), width = 1) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2)
