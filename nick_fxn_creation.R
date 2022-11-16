@@ -1,10 +1,11 @@
 ## ------------------------------ ##
       # Stat Extract Function
 ## ------------------------------ ##
+# Written by Nick J Lyon
 
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, nlme)
+librarian::shelf(tidyverse, nlme, NCEAS/scicomptools)
 
 # Clear environment
 rm(list = ls())
@@ -20,63 +21,15 @@ df <- read.csv(file = file.path("data", "exp_clim.csv"))
 my_fit <- nlme::lme(tot.cover ~ airtemp_max + precip, data = df, 
             random = ~1|uniqueID, method = "ML")
 
-# Summarize
-summary(my_fit)
+# Extract model components
+est <- scicomptools::nlme_extract(fit = my_fit)
 
-## ------------------------------ ##
-    # Function Development ----
-## ------------------------------ ##
+# Take a look
+est
 
-# Grab summary as an object
-summ_fit <- summary(my_fit)
+# Can now export that as a CSV / to Google Drive as desired!
 
-# Find model estimates
-summ_fit$tTable
-
-# Find number observations
-summ_fit$dims$N
-
-# Strip out row names
-fit_strip <- cbind(data.frame("Term" = rownames(summ_fit$tTable),
-                              "N_obs" = summ_fit$dims$N),
-                   summ_fit$tTable)
-
-# Drop old (flawed row names)
-rownames(fit_strip) <- NULL
-
-# Check out actual product
-fit_strip
-
-## ------------------------------ ##
-      # Function Actual ----
-## ------------------------------ ##
-
-nlme_extract <- function(fit = NULL){
-  
-  # Error out for missing fit
-  if(is.null(fit))
-    stop("`fit` must be specified")
-  
-  # Error out for inappropriate type of fit
-  if(class(fit) != "lme")
-    stop("`fit` must be class 'lme'")
-  
-  # Grab summary of the fit object
-  table <- base::summary(fit)
-  
-  # Grab all relevant bits
-  strip <- cbind(data.frame("Term" = rownames(table$tTable),
-                            "N_obs" = table$dims$N),
-                 table$tTable)
-  
-  # Drop old (flawed row names)
-  rownames(strip) <- NULL
-  
-  # Return final table
-  return(strip)
-}
-
-# Invoke function
-nlme_extract(fit = my_fit)
+# For more information:
+?scicomptools::nlme_extract
 
 # End ----
