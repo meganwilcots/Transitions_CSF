@@ -49,3 +49,7 @@ vignettes/*.pdf
 ## Ignore test files
 
 *_test.R
+
+## Gdrive downloads
+
+raw_data_GDrive/
