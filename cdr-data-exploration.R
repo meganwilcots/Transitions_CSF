@@ -1,6 +1,7 @@
 ##need to run cdr data cleaning script before this one
 setwd("~/Desktop/lter transitions data/")
 cdr_climate <- read.csv("cdr_weather.csv")
+cdr_clean <- read.csv("cdr_clean.csv")
 library(tidyverse)
 
 #### data cleaning to get from Cedar Creek output (weird date format) to useable output ###
