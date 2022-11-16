@@ -53,3 +53,11 @@ vignettes/*.pdf
 ## Gdrive downloads
 
 raw_data_GDrive/
+
+# Ignore spatial files
+*.cpg
+*.dbf
+*.shp
+*.shx
+*.prj
+
