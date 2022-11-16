@@ -91,3 +91,14 @@ sumstats <- knz_final %>%
             range_precip = range(MAP_mm),
             mean_spei= mean(SPEI_6m),
             range_spei = range(SPEI_6m))
+
+##visualizing
+ggplot(knz_standardized, aes(x = SPEI_6m, y = NPP_stand)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = T) +
+  theme_bw()
+
+ggplot(knz_standardized, aes(x = MAP_stand, y = NPP_stand)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = T) +
+  theme_bw()
