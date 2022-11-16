@@ -33,19 +33,77 @@ head(spei_KBS6_df)
 spei_KBS6_df$year=format(as.Date(spei_KBS6_df$time),"%Y")
 spei_KBS6_df$month=format(as.Date(spei_KBS6_df$time),"%m")
 spei_KBS6_df$time=NULL
+head(spei_KBS6_df)
+
+#Annual precip and max temp
+head(kbs_monthly_MET)
+kbs_monthly_MET_annual=kbs_monthly_MET|>group_by(year)|>
+  summarise(air_temp_max_max=max(air_temp_max), annual_precip=sum(precipitation))
 
 
 #https://lter.kbs.msu.edu/datatables/686
 source("Data_cleaning/kbs_early_succ_microplot_msce_cleaning.R") # extra column is disturbance treatment
 
-head(kbs_mcse_e_succ)
-dim(kbs_mcse_e_succ)
-#757   8
-kbs_mcse_e_succ$year=format(as.Date(kbs_mcse_e_succ$sample_date),"%Y")
-kbs_mcse_e_succ$month=format(as.Date(kbs_mcse_e_succ$sample_date),"%m")
 
-kbs_mcse_e_succ|>group_by(year,method,disturbed,fertilized)|>summarise(n())
-kbs_mcse_e_succ|>group_by(month,method,disturbed,fertilized)|>summarise(n())
+
+head(KBS_spp_clean)
+dim(KBS_spp_clean)
+#4103   20
+colnames(KBS_spp_clean)
+unique(KBS_spp_clean$nadd)
+unique(KBS_spp_clean$disturbance)
+#Remove disturbed and nfert
+
+KBS_spp_clean_control=subset(KBS_spp_clean, nadd=="unfertilized")
+dim(KBS_spp_clean_control)
+#424  20
+
+#Summarize 
+
+KBS_spp_clean_control_tot=KBS_spp_clean_control|>group_by(year,month,plot,nadd,uniqueID,disturbance)|>
+  summarise(ANPP=sum(abundance))
+dim(KBS_spp_clean_control_tot)
+summary(as.numeric(KBS_spp_clean_control_tot$year))
+
+#Annual temp and precip
+
+KBS_spp_clean_control_tot_temp_precip=merge(KBS_spp_clean_control_tot, kbs_monthly_MET_annual,
+                                            by="year" )
+head(KBS_spp_clean_control_tot_temp_precip)
+KBS_spp_clean_control_tot_temp_precip=KBS_spp_clean_control_tot_temp_precip|>mutate(ANPP_scale=scale(ANPP), air_temp_max_max_scale=scale(air_temp_max_max), annual_precip_scale=scale(annual_precip))
+
+dim(KBS_spp_clean_control_tot_temp_precip)
+
+
+
+kbs_temp_precip_mod=lme(ANPP_scale~air_temp_max_max_scale+annual_precip_scale,
+                    data=KBS_spp_clean_control_tot_temp_precip,
+                    random=~1|plot,method="ML")
+
+summary(kbs_temp_precip_mod)
+
+summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_max_max")])
+#SPEI time
+head(spei_KBS6_df)
+KBS_spp_clean_control_spei=merge(KBS_spp_clean_control_tot, spei_KBS6_df,
+                                            by=c("year","month") )
+head(KBS_spp_clean_control_spei)
+KBS_spp_clean_control_spei=KBS_spp_clean_control_spei|>mutate(ANPP_scale=scale(ANPP),
+                                                              SPEI_6m_scale=scale(SPEI_6m))
+dim(KBS_spp_clean_control_spei)
+
+kbs_spei_mod=lme(ANPP_scale~SPEI_6m,
+                    data=KBS_spp_clean_control_spei,
+                    random=~1|plot,method="ML")
+summary(KBS_spp_clean_control_spei$SPEI_6m)
+summary(KBS_spp_clean_control_spei)
+summary(kbs_spei_mod)
+
+ggplot(KBS_spp_clean_control_spei, aes(x=SPEI_6m,y=ANPP_scale))+geom_point()+
+  geom_abline(slope = -0.04376540,intercept = 0.00906408)
+subset(KBS_spp_clean_control_spei,SPEI_6m<=-1)
+subset(KBS_spp_clean_control_spei,year==1998)
+#####Non-linear code section #####
 #some sites have multiple sampling dates
 
 #Let's take the final harvest from each year 
