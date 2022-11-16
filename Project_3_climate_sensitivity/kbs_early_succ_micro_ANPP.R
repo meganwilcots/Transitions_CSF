@@ -83,6 +83,29 @@ kbs_temp_precip_mod=lme(ANPP_scale~air_temp_max_max_scale+annual_precip_scale,
 summary(kbs_temp_precip_mod)
 
 summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_max_max")])
+
+# Extract model components
+kbs_temp_precip_mod_est <- scicomptools::nlme_extract(fit = kbs_temp_precip_mod)
+
+# Take a look
+kbs_temp_precip_mod_est
+
+
+KBS_rain_temp_sub=KBS_spp_clean_control_tot_temp_precip[!duplicated(KBS_spp_clean_control_tot_temp_precip$year),]
+ggplot(KBS_rain_temp_sub|>pivot_longer(cols = c(annual_precip,air_temp_max_max),names_to = "measure",values_to = "value"), aes(x=value))+geom_density()+facet_wrap(~measure,scales = "free")
+
+
+#Identify the anomalies 
+quantile(KBS_rain_temp_sub$air_temp_max_max, c(0.05, 0.95)) ## find 5th and 9th percentile
+quantile(KBS_rain_temp_sub$annual_precip, c(0.05, 0.95))
+KBS_spei_sub$anomalies <- ifelse(KBS_spei_sub$SPEI_6m >= 1.763899, "anomaly",
+                                 ifelse(KBS_spei_sub$SPEI_6m <= -1.384875, "anomaly", "normal")) ## classify 
+
+
+ggplot(KBS_spei_sub, aes(x=SPEI_6m))+geom_density()+geom_dotplot(aes(color=anomalies,fill=anomalies))
+
+
+
 #SPEI time
 head(spei_KBS6_df)
 KBS_spp_clean_control_spei=merge(KBS_spp_clean_control_tot, spei_KBS6_df,
@@ -99,10 +122,50 @@ summary(KBS_spp_clean_control_spei$SPEI_6m)
 summary(KBS_spp_clean_control_spei)
 summary(kbs_spei_mod)
 
+# Extract model components
+kbs_spei_mod_est <- scicomptools::nlme_extract(fit = kbs_spei_mod)
+
+# Take a look
+kbs_spei_mod_est
+
 ggplot(KBS_spp_clean_control_spei, aes(x=SPEI_6m,y=ANPP_scale))+geom_point()+
-  geom_abline(slope = -0.04376540,intercept = 0.00906408)
-subset(KBS_spp_clean_control_spei,SPEI_6m<=-1)
-subset(KBS_spp_clean_control_spei,year==1998)
+  geom_abline(slope = kbs_spei_mod_est[kbs_spei_mod_est$Term=="SPEI_6m",]$Value,
+              intercept = kbs_spei_mod_est[kbs_spei_mod_est$Term=="(Intercept)",]$Value)+
+  geom_smooth(color="red")
+
+KBS_spei_sub=KBS_spp_clean_control_spei[!duplicated(KBS_spp_clean_control_spei[,c("month","year")]),]
+ggplot(KBS_spei_sub, aes(x=SPEI_6m))+geom_density()
+
+#Identify the anomalies 
+quantile(KBS_spei_sub$SPEI_6m, c(0.05, 0.95)) ## find 5th and 9th percentile
+KBS_spei_sub$anomalies <- ifelse(KBS_spei_sub$SPEI_6m >= 1.763899, "anomaly",
+                             ifelse(KBS_spei_sub$SPEI_6m <= -1.384875, "anomaly", "normal")) ## classify 
+
+
+ggplot(KBS_spei_sub, aes(x=SPEI_6m))+geom_density()+geom_dotplot(aes(color=anomalies,fill=anomalies))
+
+#####Top five taxa####
+colnames(KBS_spp_clean_control)
+
+#total spp biomass
+
+kbs_spp_biomass_tot<-KBS_spp_clean_control|>
+  group_by(species)|>
+  summarise(spp_bio_tot=sum(abundance))
+
+ggplot(kbs_spp_biomass_tot,aes(x=spp_bio_tot))+
+  geom_histogram()
+
+kbs_spp_biomass_tot$species
+kbs_spp_biomass_tot[order(kbs_spp_biomass_tot$spp_bio_tot,decreasing = T),][1:5,]$species
+
+KBS_spp_clean_control_tops<-
+  KBS_spp_clean_control[KBS_spp_clean_control$species%in%kbs_spp_biomass_tot[order(kbs_spp_biomass_tot$spp_bio_tot,decreasing = T),][1:6,]$species,]
+
+
+ggplot(KBS_spp_clean_control_tops,aes(x=as.numeric(year),y=abundance))+
+  geom_point()+facet_wrap(~species,scales = "free_y")
+
 #####Non-linear code section #####
 #some sites have multiple sampling dates
 
