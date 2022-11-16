@@ -9,7 +9,7 @@
 
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, spocc, sf)
+librarian::shelf(tidyverse, spocc, sf, terra)
 
 # Clear environment
 rm(list = ls())
@@ -19,7 +19,7 @@ rm(list = ls())
 ## ------------------------------------ ##
 
 # Identify species synonyms
-sp_names <- c('Monarda fistulosa', 'Monarda menthifolia')
+sp_names <- c("Poa pratensis")
 
 # Identify sources we want to check
 sources <- c("gbif", "ecoengine", "bison")
@@ -28,7 +28,7 @@ sources <- c("gbif", "ecoengine", "bison")
 ## Note this function is *very* slow (worse if `limit` is set high)
 raw_occ <- spocc::occ(query = sp_names,
                       from = sources,
-                      limit = 10000, # set to 10,000 for relevant sample size
+                      limit = 1000, # set to 10,000 for relevant sample size
                       geometry = c(-140, 22, -58, 5), # bounding box
                       has_coords = TRUE)
 
@@ -59,7 +59,7 @@ occ_df <- occ_list %>%
   # Drop old name column
   dplyr::select(-name) %>%
   # Drop impossible coordinates
-  dplyr::fitler()
+  dplyr::filter(!is.na(longitude) & !is.na(latitude))
   
 # Glimpse the data
 dplyr::glimpse(occ_df)
@@ -97,8 +97,22 @@ occ_poly <- occ_pts %>%
 # Plot polygon
 plot(occ_poly, axes = T)
 
-# Export polygon version
+# Export polygon as a shapefile
 sf::st_write(obj = occ_poly, delete_layer = T,
-             dsn = file.path("data", paste0(sp_names[1], "_border.shp")))
+             dsn = file.path("data", paste0(sp_names[1], "_border-sf.shp")))
+
+# Convert to raster
+occ_rast <- terra::vect(occ_poly)
+
+# Check structure
+str(occ_rast)
+
+# Plot to see
+plot(occ_rast, axes = T)
+
+# Export raster
+terra::writeVector(x = occ_rast,
+                   filename = file.path("data", 
+                                        paste0(sp_names[1], "_border-rast.shp")))
 
 # End ----
