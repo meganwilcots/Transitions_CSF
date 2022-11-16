@@ -1,26 +1,52 @@
-##need to run cdr data cleaning script before this one
-setwd("~/Desktop/lter transitions data/")
-cdr_climate <- read.csv("cdr_weather.csv")
-library(tidyverse)
+
+### Import data ####
+library(googledrive); library(httpuv); library(tidyverse)
+dir.create("raw_data_GDrive", showWarnings = F)
+files_ls=drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYHapP7H0J3gXXkUf6-nmqL"))
+
+#Download the dataset based on the file name in the directory
+drive_download(file = subset(files_ls,name=="cdr_clean.csv"),
+               path = "raw_data_GDrive/cdr_clean.csv",
+               overwrite = TRUE)#Overwrite is in included so you can replace older versions
+drive_download(file = subset(files_ls,name=="cdr_weather.csv"),
+               path = "raw_data_GDrive/cdr_weather.csv",
+               overwrite = TRUE)
+cdr_climate <- read.csv("raw_data_GDrive/cdr_weather.csv", sep=",",header = T)
+cdr_clean <- read.csv("raw_data_GDrive/cdr_clean.csv", sep=",",header = T)
+
+
+
+#### data cleaning to get from Cedar Creek output (weird date format) to useable output ####
 cdr_climate$newdate <- strptime(as.character(cdr_climate$Date), "%m/%d/%y")
 cdr_climate$nd <- format(cdr_climate$newdate, "%Y-%m-%d")
 tmp <- as.POSIXlt(cdr_climate$nd, format = "%Y-%m-%d")
 tmp$yday### R automatically makes years ending in 00 - 68 to 2000s, so need to change 62 - 68 to 1900s
 cdr_climate$julian_day <- tmp$yday
-cdr_climate$year <- substr(cdr_climate$nd, 1, 4) ##just the year
-cdr_climate$month <- substr(cdr_climate$nd, 6, 7) ##just the month
+cdr_climate$year <- substr(cdr_climate$nd, 1, 4) ##pull just the year from the date
+cdr_climate$month <- substr(cdr_climate$nd, 6, 7) ##just the month from the date
 
-group_1900 <- filter(cdr_climate, year > 2017)
-years_1900 <- group_1900[,10]
-correct_years_1900 <- gsub("20", "19", years_1900)
-group_2000 <- filter(cdr_climate, year <= 2017)
+group_1900 <- filter(cdr_climate, year > 2017) ## R defaults to 2-digit years form 00-68 to be in the 2000s -- fixing to be 1900s
+## 2017 is the last year of data, so anything greater than 2017 should be from the 1900s
+years_1900 <- group_1900[,10] ## extracting year column
+correct_years_1900 <- gsub("20", "19", years_1900) ## changing them from 2000s to 1900s (e.g. 2062 to 1962)
+group_2000 <- filter(cdr_climate, year <= 2017) ##making df of dates that don't need to be corrected
 
-group_1900$year <- correct_years_1900
+group_1900$year <- correct_years_1900 ## put correct years into df of dates that needed to be corrected
 
-cdr_climate_final <- rbind(group_1900, group_2000)
+cdr_climate_final <- rbind(group_1900, group_2000) ## put the two dfs back together -- should all be correct dates
 names(cdr_climate_final)
 
-cdrclim <- cdr_climate_final[,c(1,4,7,10)]
+##inherited from cdr_e001... cleaning script
+cdr_clean_no_na <- na.omit(cdr_clean)
+cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
+cdr_anpp_full <- cdr_clean_no_na %>%
+  filter(species != "miscellaneous litter" ) %>%
+  group_by(year, site, plot, nadd, ncess, uniqueID) %>%
+  summarize(NPP = sum(abundance)) 
+
+### initial analyses -- skip all these!!! ####
+
+cdrclim <- cdr_climate_final[,c(1,4,7,10)] ## ignore for now
 cdrtemp <- cdr_climate_final[,c(1,2,9,10)]
 
 #### precip data ####
@@ -35,11 +61,7 @@ cdrclim1$year <- as.numeric(cdrclim1$year)
 density_plot <- ggplot(cdrclim1, aes(MAP_mm)) +
   geom_density() +
   theme_bw()
-cdr_clean_no_na <- na.omit(cdr_clean)
-cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
-cdr_anpp_full <- cdr_clean_no_na %>%
-  group_by(year, site, plot, nadd, ncess, uniqueID) %>%
-  summarize(NPP = sum(abundance)) 
+
   
 cdr_clim_anpp_full <- left_join(cdrclim1, cdr_anpp_full, by = "year") ##use for models
 cdr_clim_anpp_full <- na.omit(cdr_clim_anpp_full)
@@ -493,6 +515,8 @@ total_anpp_plot <- ggplot() +
        y="ANPP") 
 
 
+
+### START HERE ####
 #### looking at ANPP vs. MAT, MAP, and SPEI ####
 names(cdr_climate_final)
 
@@ -538,6 +562,7 @@ cdr_all <- na.omit(cdr_all)
 cdr_clean_no_na <- na.omit(cdr_clean)
 cdr_clean_no_na$year <- as.numeric(cdr_clean_no_na$year)
 cdr_anpp_control <- cdr_clean_no_na %>%
+  filter(species != "miscellaneous litter") %>%
   group_by(year, site, plot, nadd, ncess, uniqueID) %>%
   summarize(NPP = sum(abundance)) %>%
   filter(nadd == 0)
@@ -557,7 +582,9 @@ library(nlme)
 mod_tp <- lme(NPP_stand ~ MAP_stand + temp_stand, random = ~1|uniqueID, data = cdr_standardized)
 mod_spei <- lme(NPP_stand ~ SPEI_6m, random = ~1|uniqueID, data = cdr_standardized)
 
-summary(mod_tp)
+mod_tp1 <- lme(log(NPP) ~ log(MAP_mm) + log(max_temp_c), random = ~1|uniqueID, data = cdr_standardized)
+
+summary(mod_tp1)
 summary(mod_spei)
 library(vegan)
 
@@ -575,8 +602,30 @@ ggplot(cdr_standardized, aes(x = SPEI_6m, y = NPP)) +
   geom_smooth(method = "lm", se = T) +
   theme_bw()
 
-ggplot(cdr_standardized, aes(x = MAP_stand, y = NPP)) +
+ggplot(cdr_standardized, aes(x = log(max_temp_c), y = log(NPP))) +
   geom_point() +
   geom_smooth(method = "lm", se = T) +
   theme_bw()
 
+
+
+test_data <- tibble(site = c("CDR", "KBS", "KNZ"),
+                    coef_temp = c(-0.234744, 1.259432, 0.4367869),
+                    se_temp = c(0.2021094, 0.715985, 0.1569016),
+                    coef_precip = c(0.328784, 1.28423, 0.4598646),
+                    se_precip = c(0.0673467, 0.1926285, 0.0440475),
+                    MAP = c(831.052, 905.7, 796.1),
+                    max_temp = c(12.5, 34.8, 19.3))
+ggplot(test_data, aes(x = MAP, y = coef_precip, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 1.4) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  ylab("Coef. standardized(NPP ~ MAP)") +
+  xlab("MAP")
+
+ggplot(test_data, aes(x = max_temp, y = coef_temp, color = site)) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = coef_temp - se_temp, ymax = coef_temp + se_temp), width = 1) +
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype = 2)
