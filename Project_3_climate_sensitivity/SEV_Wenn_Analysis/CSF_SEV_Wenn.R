@@ -34,6 +34,10 @@ exp.fall$substring_year = str_sub(exp.fall$year,1,4)
 #Add climate data
 exp.clim <- merge.data.frame(exp.fall,sev_wenn_clim, by.x="substring_year",by.y="year")
 
+
+#Clean up data frames
+rm(exp.fall, exp.tot, exp.wide, sev_wen_clean, sev_wenn_clim)
+
 #Wednesday's Log-Log Models 
 m1<-lme(log(tot.cover)~ log(annualpcp) + log(mean_maxairt), random = ~ 1|plot, data=exp.clim)
 summary(m1)
