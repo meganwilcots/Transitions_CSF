@@ -34,7 +34,7 @@ exp.fall$substring_year = str_sub(exp.fall$year,1,4)
 #Add climate data
 exp.clim <- merge.data.frame(exp.fall,sev_wenn_clim, by.x="substring_year",by.y="year")
 
-#Model 
+#Wednesday's Log-Log Models 
 m1<-lme(log(tot.cover)~ log(annualpcp) + log(mean_maxairt), random = ~ 1|plot, data=exp.clim)
 summary(m1)
 
@@ -52,23 +52,19 @@ summary(m2)
 librarian::shelf(tidyverse, nlme, NCEAS/scicomptools)
 
 # Extract model components
+est1 <- scicomptools::nlme_extract(fit = m1) 
 est2 <- scicomptools::nlme_extract(fit = m2) 
 
 # Take a look
+est1
 est2
 
 # Can now export that as a CSV / to Google Drive as desired!
 
-# For more information:
-?scicomptools::nlme_extract
 
-# End ----
-
-
-exp.clim[exp.clim$substring_year %in% unique(sev_wen_clean$year),]
-
-
-#Summary statistics
+## ------------------------------ ##
+# Site Summary Statistics
+## ------------------------------ ##
 sev_wenn_clim %>%
   summarize(mean_temp = mean(mean_airt),
             range_mean_temp = range(mean_airt),
@@ -77,3 +73,9 @@ sev_wenn_clim %>%
             mean_precip = mean(annualpcp),
             range_precip = range(annualpcp)) ->
   sumstats
+
+
+## ------------------------------ ##
+# Determine Site Dominant Species
+## ------------------------------ ##
+
