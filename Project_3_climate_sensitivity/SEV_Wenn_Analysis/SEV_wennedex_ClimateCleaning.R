@@ -55,7 +55,7 @@ annual_pcp %>% left_join(mean_max_temp, by = "year") ->
 wenn_clim %>% left_join(mean_temp, by = "year") ->
   sev_wenn_clim
 
-rm(wenn.clim, annual_pcp, mean_max_temp)
+rm(wenn.clim, wenn_clim, annual_pcp, mean_max_temp, mean_temp)
 
 
 
