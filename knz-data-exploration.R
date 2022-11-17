@@ -1,9 +1,19 @@
 ### cleaning konza data and data exploration ###
 rm(list = ls())
-setwd("~/Desktop/lter transitions data/")
-library(tidyverse)
-knz_biom <- read.csv("konza_biomass.csv")
-knz_weather <- read.csv("konza_weather.csv")
+library(googledrive); library(httpuv); library(tidyverse)
+dir.create("raw_data_GDrive", showWarnings = F)
+files_ls=drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYHapP7H0J3gXXkUf6-nmqL"))
+
+#Download the dataset based on the file name in the directory
+drive_download(file = subset(files_ls,name=="konza_biomass.csv"),
+               path = "raw_data_GDrive/konza_biomass.csv",
+               overwrite = TRUE)#Overwrite is in included so you can replace older versions
+drive_download(file = subset(files_ls,name=="konza_weather.csv"),
+               path = "raw_data_GDrive/konza_weather.csv",
+               overwrite = TRUE)
+knz_weather <- read.csv("raw_data_GDrive/konza_weather.csv", sep=",",header = T)
+knz_biom <- read.csv("raw_data_GDrive/konza_biomass.csv", sep=",",header = T)
+
 
 names(knz_biom)
 knz_biom <- select(knz_biom, -CUYRDEAD, -PRYRDEAD, -WOODY, -COMMENTS)

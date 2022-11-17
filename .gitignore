@@ -46,3 +46,18 @@ vignettes/*.pdf
 ## Ignore folders
 ## data/rawdata/filename
 
+## Ignore test files
+
+*_test.R
+
+## Gdrive downloads
+
+raw_data_GDrive/
+
+# Ignore spatial files
+*.cpg
+*.dbf
+*.shp
+*.shx
+*.prj
+
