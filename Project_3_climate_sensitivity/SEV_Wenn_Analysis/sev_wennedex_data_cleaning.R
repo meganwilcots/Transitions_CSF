@@ -83,10 +83,12 @@ sev_wen_clean <- sevwen %>%
                 scaleAbund = "g/m2",   # check metadata
                 species = kartez,
                 fungroup = FunctionalGroup,
+                season.ppt = season.precip,
+                spei = SPEI.comp,
                 uniqueID = paste(site, field, project, plot, subplot, sep = "_")) %>%
   dplyr::select(year, site, field, project, plot, subplot, uniqueID,
                 carbon, nadd, ncess, fence, burn, rainfall, warm,
-                species, fungroup, abundance, unitAbund, scaleAbund) 
+                species, fungroup, abundance, unitAbund, scaleAbund, season.ppt, spei) 
 
 rm(files_ls, df, treat.df, sevwen)
 
