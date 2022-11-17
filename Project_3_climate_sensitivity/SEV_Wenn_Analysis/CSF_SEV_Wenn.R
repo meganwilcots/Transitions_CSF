@@ -86,21 +86,21 @@ sev_wenn_clim %>%
 ## ------------------------------ ##
 
 
-#Pull in data in long format
-exp.dat<-read.csv(here::here("Project_3_climate_sensitivity","sev_nfert_clean.csv"))
+#load data from the directory
+exp.dat<-read.table("raw_data_GDrive/SEV_wenndex_biomass_2021.csv", sep=",",header = T)
 
 #Visualize count data of species cover
-ggplot(exp.dat, aes(x=abundance, color=species)) + 
+ggplot(exp.dat, aes(x=biomass.BM, color=kartez)) + 
   geom_histogram()
 
 #Get species totals over time and all plots
 exp.dat %>%
-  group_by(species) %>%
-  summarise(tot.abundance= sum(abundance))->
-  new_data
+  group_by(kartez) %>%
+  summarise(tot.biomass= sum(biomass.BM))->
+  tot_biomass_data
 
 #Get most abundant species
-new<-exp.dat[exp.dat$species %in% subset(new_data, tot.abundance>=quantile(new_data$tot.abundance, probs=0.90))$species,] #brackets used for indexing
+new<-exp.dat[exp.dat$kartez %in% subset(tot_biomass_data, tot.biomass>=quantile(tot_biomass_data$tot.biomass, probs=0.90))$kartez,] #brackets used for indexing
 
 
 
