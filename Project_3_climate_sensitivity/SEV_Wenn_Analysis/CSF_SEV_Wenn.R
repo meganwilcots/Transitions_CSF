@@ -36,7 +36,7 @@ exp.clim <- merge.data.frame(exp.fall,sev_wenn_clim, by.x="substring_year",by.y=
 
 
 #Clean up data frames
-rm(exp.fall, exp.tot, exp.wide, sev_wen_clean, sev_wenn_clim)
+rm(exp.fall, exp.tot, exp.wide, sev_wen_clean)
 
 #Wednesday's Log-Log Models 
 m1<-lme(log(tot.cover)~ log(annualpcp) + log(mean_maxairt), random = ~ 1|plot, data=exp.clim)
@@ -81,5 +81,26 @@ sev_wenn_clim %>%
 
 ## ------------------------------ ##
 # Determine Site Dominant Species
+# by determining 90th percentile of
+# abundance
 ## ------------------------------ ##
+
+
+#Pull in data in long format
+exp.dat<-read.csv(here::here("Project_3_climate_sensitivity","sev_nfert_clean.csv"))
+
+#Visualize count data of species cover
+ggplot(exp.dat, aes(x=abundance, color=species)) + 
+  geom_histogram()
+
+#Get species totals over time and all plots
+exp.dat %>%
+  group_by(species) %>%
+  summarise(tot.abundance= sum(abundance))->
+  new_data
+
+#Get most abundant species
+new<-exp.dat[exp.dat$species %in% subset(new_data, tot.abundance>=quantile(new_data$tot.abundance, probs=0.90))$species,] #brackets used for indexing
+
+
 
