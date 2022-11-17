@@ -17,6 +17,13 @@ head(kbs_monthly_MET)
 dim(kbs_monthly_MET)
 #417   6
 
+kbs_daily_MET= read.table(here::here("Project_3_climate_sensitivity","KBS_data","12-lter+weather+station+daily+weather+all+variates+1668639113.csv"),
+                            sep = ",", header = T)
+head(kbs_daily_MET)
+dim(kbs_daily_MET)
+#12728    26
+
+
 #Calculate balances
 
 kbs_monthly_MET$PET <- thornthwaite(kbs_monthly_MET$air_temp_mean, 42.415329)
@@ -39,9 +46,11 @@ head(spei_KBS6_df)
 head(kbs_monthly_MET)
 kbs_monthly_MET_annual=kbs_monthly_MET|>group_by(year)|>
   summarise(air_temp_max_max=max(air_temp_max), annual_precip=sum(precipitation),
-            air_temp_max_mean=mean(air_temp_max))
+            air_temp_max_mean=mean(air_temp_max), air_temp_mean_mean=mean(air_temp_mean))
 
 
+ggplot(kbs_monthly_MET,aes(x=year,y=air_temp_max))+geom_point()
+ggplot(kbs_monthly_MET_annual,aes(x=year,y=air_temp_max_mean))+geom_point()
 #https://lter.kbs.msu.edu/datatables/686
 source("Data_cleaning/kbs_early_succ_microplot_msce_cleaning.R") # extra column is disturbance treatment
 
@@ -77,7 +86,7 @@ KBS_spp_clean_control_tot_temp_precip=KBS_spp_clean_control_tot_temp_precip|>
 dim(KBS_spp_clean_control_tot_temp_precip)
 
 
-
+#Instantaneous max temp 
 kbs_temp_precip_mod=lme(ANPP_scale~air_temp_max_mean_scale+annual_precip_scale,
                     data=KBS_spp_clean_control_tot_temp_precip,
                     random=~1|plot,method="ML")
@@ -121,6 +130,43 @@ KBS_spei_sub$anomalies <- ifelse(KBS_spei_sub$SPEI_6m >= 1.763899, "anomaly",
 
 
 ggplot(KBS_spei_sub, aes(x=SPEI_6m))+geom_density()+geom_dotplot(aes(color=anomalies,fill=anomalies))
+
+
+#Instantaneous max temp 
+kbs_temp_mean_precip_mod=lme(ANPP_scale~air_temp_mean_mean+annual_precip_scale,
+                        data=KBS_spp_clean_control_tot_temp_precip,
+                        random=~1|plot,method="ML")
+
+summary(kbs_temp_mean_precip_mod)
+
+summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_mean_mean")])
+
+# Extract model components
+kbs_temp_mean_precip_mod_est <- scicomptools::nlme_extract(fit = kbs_temp_mean_precip_mod)
+
+# Take a look
+kbs_temp_mean_precip_mod_est
+
+
+KBS_rain_temp_sub=KBS_spp_clean_control_tot_temp_precip[!duplicated(KBS_spp_clean_control_tot_temp_precip$year),]
+ggplot(KBS_rain_temp_sub|>pivot_longer(cols = c(annual_precip,air_temp_max_mean),names_to = "measure",values_to = "value"), aes(x=value))+geom_density()+facet_wrap(~measure,scales = "free")
+
+
+kbs_temp_mean_precip_LOG_mod=lme(log(ANPP)~log(air_temp_mean_mean)+log(annual_precip),
+                            data=KBS_spp_clean_control_tot_temp_precip,
+                            random=~1|plot,method="ML")
+
+summary(kbs_temp_mean_precip_LOG_mod)
+
+summary(KBS_spp_clean_control_tot_temp_precip[,c("annual_precip","air_temp_mean_mean")])
+
+# Extract model components
+kbs_temp_mean_precip_LOG_mod_est <- scicomptools::nlme_extract(fit = kbs_temp_mean_precip_LOG_mod)
+
+# Take a look
+kbs_temp_mean_precip_LOG_mod_est
+
+
 
 
 
@@ -185,5 +231,20 @@ KBS_spp_clean_control_tops<-
 
 ggplot(KBS_spp_clean_control_tops,aes(x=as.numeric(year),y=abundance))+
   geom_point()+facet_wrap(~species,scales = "free_y")
+
+
+#Functional groups 
+unique(str_sub(KBS_spp_clean_control$species,start = 0,end = str_locate(KBS_spp_clean_control$species," ")-1))
+
+grass_c3=c()
+grass_c4=c("Panicum",)
+herb_legume=c()
+herbaceous=c("Veronica",)
+woody=c()
+
+KBS_spp_clean_control=KBS_spp_clean_control|>
+  mutate(plant_funct=case_when(plot==33~3,plot==34~7,site=="West"~ceiling(plot/4),
+                               site=="East"&plot<=48~ceiling(plot/3)-12,
+                               site=="East"&plot>48~ceiling(plot/4)-8))
 
 
