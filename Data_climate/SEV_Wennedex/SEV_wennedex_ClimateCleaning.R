@@ -28,7 +28,7 @@ wenn.clim %>%
   annual_pcp
   
 
-#Calculate mean max temp
+#Calculate mean annual MAX temp
 wenn.clim %>% 
   filter(sta=="40") %>% #Subset data to only include station 40 (Per Anny's expertise)
   mutate(maxair=as.numeric(maxair)) %>%
@@ -37,10 +37,23 @@ wenn.clim %>%
   summarise(mean_maxairt = mean(maxair, na.rm=T)) ->
   mean_max_temp
 
+#Calculate mean annual temp
+wenn.clim %>% 
+  filter(sta=="40") %>% #Subset data to only include station 40 (Per Anny's expertise)
+  mutate(maxair=as.numeric(maxair)) %>%
+  select(year, airt) %>%
+  group_by(year) %>%
+  summarise(mean_airt = mean(airt, na.rm=T)) ->
+  mean_temp
+
 
 #Join annual ppt and mean max temp data by year
 annual_pcp %>% left_join(mean_max_temp, by = "year") ->
-  final_sev_wenn_clim
+  wenn_clim
+
+#Join annual ppt and mean max temp data and mean temp by year
+wenn_clim %>% left_join(mean_temp, by = "year") ->
+  sev_wenn_clim
 
 rm(wenn.clim, annual_pcp, mean_max_temp)
 
