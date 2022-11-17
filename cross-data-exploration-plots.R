@@ -67,16 +67,36 @@ colnames(Climate_sensitivity_log)
 
 ggplot(Climate_sensitivity_log, aes(x = mean_precip, y = coef_precip, color = site_name)) +
   geom_point(size = 5) +
-  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 8) +
+  geom_errorbar(aes(ymin = coef_precip - se_precip, ymax = coef_precip + se_precip), width = 1.8) +
   theme_bw(base_size = 24) +
   geom_hline(yintercept = 0, linetype = 2) +
   ylab("Coef. log-log\n(log NPP ~ log MAP)") +
-  xlab("MAP")+theme(legend.title = element_blank())
+  xlab("MAP")+theme(legend.title = element_blank()) 
+
 
 ggplot(Climate_sensitivity_log, aes(x = mean_max_temp, y = coef_max_temp, color = site_name)) +
   geom_point(size = 5) +
-  geom_errorbar(aes(ymin = coef_max_temp - se_max_temp, ymax = coef_max_temp + se_max_temp), width = 1) +
+  geom_errorbar(aes(ymin = coef_max_temp - se_max_temp, ymax = coef_max_temp + se_max_temp), width = 0.05) +
   theme_bw(base_size = 24) +
   geom_hline(yintercept = 0, linetype = 2) +
   ylab("Coef. log-log\n(log NPP ~ log Max Temp)") +
-  xlab("Mean max temp")+theme(legend.title = element_blank())
+  xlab("Mean max temp")+theme(legend.title = element_blank()) 
+
+ggplot(Climate_sensitivity_log, aes(x = coef_precip, y = coef_max_temp, color = site_name)) +
+  geom_point(size = 5) +
+  geom_errorbar(aes(ymin = coef_max_temp - se_max_temp, ymax = coef_max_temp + se_max_temp), width = 0.05) +
+  geom_errorbar(aes(xmin = coef_precip - se_precip, xmax = coef_precip + se_precip), width = 0.1) +
+  theme_bw(base_size = 24) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  #ylab("Coef. log-log\n(log NPP ~ log Max Temp)") +
+  #xlab("Mean max temp")+theme(legend.title = element_blank()) +
+  geom_hline(yintercept = 0) +
+  geom_vline(xintercept = 0)
+
+ggplot(Climate_sensitivity_log, aes(x = mean_precip, y = mean_max_temp, shape = site_name, color = coef_max_temp)) +
+  geom_point(aes(size = abs(coef_max_temp))) +
+  theme_bw()
+
+ggplot(Climate_sensitivity_log, aes(x = mean_precip, y = mean_max_temp, shape = site_name, color = coef_precip)) +
+  geom_point(aes(size = abs(coef_precip))) +
+  theme_bw()
