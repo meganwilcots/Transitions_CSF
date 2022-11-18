@@ -10,6 +10,7 @@ library(MuMIn)
 library(visreg)
 library(car)
 library(piecewiseSEM)
+library(cowplot)
 #https://lter.kbs.msu.edu/datatables/448
 kbs_monthly_MET= read.table(here::here("Project_3_climate_sensitivity","KBS_data","448-monthly+precipitation+and+air+temperature+1666860249.csv"),
                             sep = ",", header = T)
@@ -221,7 +222,71 @@ kbs_spp_biomass_tot<-KBS_spp_clean_control|>
   summarise(spp_bio_tot=sum(abundance))
 
 ggplot(kbs_spp_biomass_tot,aes(x=spp_bio_tot))+
-  geom_histogram()
+  geom_histogram()+geom_vline(xintercept = mean(kbs_spp_biomass_tot$spp_bio_tot))
+
+kbs_spp_biomass_tot_year<-KBS_spp_clean_control|>
+  group_by(species,year)|>
+  summarise(spp_bio_tot=mean(abundance))
+
+ggplot(kbs_spp_biomass_tot_year[kbs_spp_biomass_tot_year$species%in%
+                                  subset(kbs_spp_biomass_tot,spp_bio_tot>=mean(kbs_spp_biomass_tot$spp_bio_tot))$species,],aes(x=year,y=spp_bio_tot, 
+                                                                                                                               group=species, color=species))+geom_line()+theme(legend.position = "none")
+
+
+plot_grid(ggplot(kbs_spp_biomass_tot_year|>group_by(year)|>summarise(bio_tot=sum(spp_bio_tot)),
+                 aes(x=year,y=bio_tot))+geom_line()+theme(legend.position = "none"),
+          ggplot(kbs_spp_biomass_tot_year[kbs_spp_biomass_tot_year$species%in%
+                                            subset(kbs_spp_biomass_tot,spp_bio_tot>=quantile(kbs_spp_biomass_tot$spp_bio_tot, probs = 0.95))$species,]|>
+                   group_by(year)|>summarise(dom_biomass=sum(spp_bio_tot)),aes(x=year,y=dom_biomass))+geom_line()+theme(legend.position = "none"),
+          ggplot(kbs_spp_biomass_tot_year[kbs_spp_biomass_tot_year$species%in%
+                                            subset(kbs_spp_biomass_tot,spp_bio_tot>=quantile(kbs_spp_biomass_tot$spp_bio_tot, probs = 0.90))$species,]|>
+                   group_by(year)|>summarise(dom_biomass=sum(spp_bio_tot)),aes(x=year,y=dom_biomass))+geom_line()+theme(legend.position = "none"),nrow = 3)
+
+length(subset(kbs_spp_biomass_tot,spp_bio_tot>=quantile(kbs_spp_biomass_tot$spp_bio_tot, probs = 0.90))$species)
+#14
+#Functional groups 
+subset(kbs_spp_biomass_tot,spp_bio_tot>=quantile(kbs_spp_biomass_tot$spp_bio_tot, probs = 0.90))$species
+
+
+KBS_spp_clean_control_90=KBS_spp_clean_control[KBS_spp_clean_control$species%in%
+                                                 subset(kbs_spp_biomass_tot,spp_bio_tot>=
+                                                          quantile(kbs_spp_biomass_tot$spp_bio_tot, probs = 0.90))$species,]
+
+dim(KBS_spp_clean_control_90)
+grass=c("Elymus repens (L.) Gould","Phleum pratense L.",
+        "Poa pratensis L.")
+
+herb_legume=c("Trifolium pratense L.")
+herbaceous_perennial=
+  c("Apocynum cannabinum L.","Aster pilosus Willd.",
+    "Centaurea stoebe L. ssp. micranthos (Gugler) Hayek",
+    "Euthamia graminifolia (L.) Nutt.",
+    "Rubus allegheniensis T.C. Porter (*)")
+herbaceous_annual=c("Conyza canadensis (L.) Cronq.","Daucus carota L.",
+                    "Erigeron annuus (L.) Pers." ,"Solidago canadensis L."
+                    )
+woody_nfix=c("Robinia pseudoacacia L.")
+
+KBS_spp_clean_control_90=KBS_spp_clean_control_90|>
+  mutate(plant_funct=case_when(species%in%grass~"grass",
+                               species%in%herb_legume~"herb_legume",
+                               species%in%herbaceous_perennial~"herbaceous_perennial",
+                               species%in%herbaceous_annual~"herbaceous_annual",
+                               species%in%woody_nfix~"woody_nfix"))
+
+
+
+KBS_spp_clean_control_90_funct=
+  KBS_spp_clean_control_90|>group_by(plant_funct,year)|>
+  summarise(funct_abun=sum(abundance))
+
+
+plot_grid(ggplot(KBS_spp_clean_control|>group_by(year)|>summarise(bio_tot=sum(abundance)),
+                 aes(x=year,y=bio_tot))+geom_line()+theme(legend.position = "none"),
+          ggplot(KBS_spp_clean_control_90_funct,aes(x=year,y=funct_abun,color=plant_funct))+geom_line(),
+          align = "v",axis = "r",nrow = 2)
+
+
 
 kbs_spp_biomass_tot$species
 kbs_spp_biomass_tot[order(kbs_spp_biomass_tot$spp_bio_tot,decreasing = T),][1:5,]$species
@@ -232,19 +297,5 @@ KBS_spp_clean_control_tops<-
 ggplot(KBS_spp_clean_control_tops,aes(x=as.numeric(year),y=abundance))+
   geom_point()+facet_wrap(~species,scales = "free_y")
 
-
-#Functional groups 
-unique(str_sub(KBS_spp_clean_control$species,start = 0,end = str_locate(KBS_spp_clean_control$species," ")-1))
-
-grass_c3=c()
-grass_c4=c("Panicum",)
-herb_legume=c()
-herbaceous=c("Veronica",)
-woody=c()
-
-KBS_spp_clean_control=KBS_spp_clean_control|>
-  mutate(plant_funct=case_when(plot==33~3,plot==34~7,site=="West"~ceiling(plot/4),
-                               site=="East"&plot<=48~ceiling(plot/3)-12,
-                               site=="East"&plot>48~ceiling(plot/4)-8))
 
 
