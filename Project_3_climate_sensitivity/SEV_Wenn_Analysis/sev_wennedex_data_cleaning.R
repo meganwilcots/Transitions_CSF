@@ -30,7 +30,7 @@ sevwen<-read.table("raw_data_GDrive/SEV_wenndex_biomass_2021.csv", sep=",",heade
 ## Working data frame
 
 unique(sevwen$site)
-# only 1 site
+# only 1 site--warming site
 
 #Twice a year sampling
 unique(sevwen$season)

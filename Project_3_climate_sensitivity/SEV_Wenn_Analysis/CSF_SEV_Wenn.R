@@ -41,10 +41,11 @@ rm(exp.fall, exp.tot, exp.wide, sev_wen_clean)
 #Wednesday's Log-Log Models 
 m1<-lme(log(tot.cover)~ log(annualpcp) + log(mean_maxairt), random = ~ 1|plot, data=exp.clim)
 summary(m1)
+##P-value for log(annualpcp) is zero. This is weird! 
 
 m2<-lme(log(tot.cover)~ log(annualpcp) + log(mean_airt), random = ~ 1|plot, data=exp.clim)
 summary(m2)
-
+##P-value for intercept and log(annualpcp) is zero. This is also weird! 
 
 ## ------------------------------ ##
 # Statistics Extraction
@@ -95,12 +96,25 @@ ggplot(exp.dat, aes(x=biomass.BM, color=kartez)) +
 
 #Get species totals over time and all plots
 exp.dat %>%
-  group_by(kartez) %>%
+  group_by(kartez) %>% #kartez is the species ID
   summarise(tot.biomass= sum(biomass.BM))->
   tot_biomass_data
 
 #Get most abundant species
-new<-exp.dat[exp.dat$kartez %in% subset(tot_biomass_data, tot.biomass>=quantile(tot_biomass_data$tot.biomass, probs=0.90))$kartez,] #brackets used for indexing
+new<-exp.dat[exp.dat$kartez 
+             %in% subset(tot_biomass_data, tot.biomass>=
+                           quantile(tot_biomass_data$tot.biomass, probs=0.90))$kartez,] #brackets used for indexing
 
+
+#plot most abundant species
+x <-ggplot(new, aes(x=biomass.BM, color=kartez)) + 
+  geom_histogram()
+
+## ------------------------------ ##
+# General Analytical Models-Friday
+## ------------------------------ ##
+
+m3<-lme(log(tot.cover)~ log(annualpcp) * log(mean_airt), random = ~ 1|plot, data=exp.clim)
+summary(m3)
 
 
