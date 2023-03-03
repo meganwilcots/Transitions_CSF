@@ -69,7 +69,7 @@ sev_wen_clean <- sevwen %>%
                 year = year_seas, #to deal with fall/spring,
                 expyear = ExpYear,
                 plot = plot, 
-                subplot = quad,   # check if this does make sense
+                subplot = quad,   # check if this does make sense (this is correct)
                 abundance = biomass.BM, #biomass based on best model
                 trt = treatment,
                 carbon = "0",
