@@ -1,4 +1,4 @@
-#This script cleans the SEV_Wennedex Climate Data
+#This script cleans the SEV_WENNDEx Climate Data
 
 library(here)
 library(vegan)
