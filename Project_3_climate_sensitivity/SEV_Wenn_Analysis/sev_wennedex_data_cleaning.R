@@ -1,4 +1,4 @@
-### SEV WENNDEX Data Cleaning ###
+### SEV WENNDEx Data Cleaning ###
 
 
 ## Data manipulation packages
@@ -24,16 +24,16 @@ drive_download(file = subset(files_ls,name=="SEV_wenndex_biomass_2021.csv"),
 
 
 #load data from the directory
-
 sevwen<-read.table("raw_data_GDrive/SEV_wenndex_biomass_2021.csv", sep=",",header = T)
-
 ## Working data frame
 
 unique(sevwen$site)
 # only 1 site--warming site
 
-#Twice a year sampling
+unique(sevwen$year)
 unique(sevwen$season)
+#Twice a year sampling
+
 sevwen$seas_num<-as.numeric(as.character(recode_factor(sevwen$season,fall="0.5",spring="0")))
 sevwen$year_seas<-sevwen$year+sevwen$seas_num
 
@@ -41,7 +41,6 @@ sevwen$year_seas<-sevwen$year+sevwen$seas_num
 df <- data.frame(year_seas= seq(from=min(sevwen$year_seas),to=max(sevwen$year_seas), by=0.5),
                  ExpYear= seq(from=1,to=(max(sevwen$year_seas)-min(sevwen$year_seas)+1), by=0.5))
 sevwen <- merge.data.frame(sevwen, df, by="year_seas" )
-
 
 ## Split up the different types of treatments into separate columns
 unique(sevwen$treatment)
@@ -54,9 +53,10 @@ treat.df<-data.frame(treatment=unique(sevwen$treatment),
                      warm=c("T","T","C","C","T","T","C","C"),
                      rainfall=c("C","P","P","C","P","C","P","C"),
                      Nadd=c("C","N","C","N","C","N","N","C"))
-sevwen <- merge.data.frame(sevwen, treat.df, by="treatment" )
 
-## Clean up data SEV WENNDEX!
+sevwen <- merge.data.frame(sevwen, treat.df, by="treatment")
+
+## Clean up SEV WENNDEX DATA!
 
 sev_wen_clean <- sevwen %>%
   as_tibble() %>%
@@ -65,7 +65,6 @@ sev_wen_clean <- sevwen %>%
   ## format column names to match the rest of the datasets
   dplyr::mutate(site = "sev",
                 project = "wen",
-                field = project,
                 year = year_seas, #to deal with fall/spring,
                 expyear = ExpYear,
                 plot = plot, 
@@ -81,14 +80,15 @@ sev_wen_clean <- sevwen %>%
                 warm = warm,
                 unitAbund = "biomass",
                 scaleAbund = "g/m2",   # check metadata
-                species = kartez,
+                species = paste(genus, sp.epithet, sep =" "),
                 fungroup = FunctionalGroup,
-                season.ppt = season.precip, #check which months this includes from meta data
+                photopath = PhotoPath,
+                season.ppt = season.precip, #check which months this includes from meta data--not stated ask Anny or Jenn
                 spei = SPEI.comp,
-                uniqueID = paste(site, field, project, plot, subplot, sep = "_")) %>%
-  dplyr::select(year, site, field, project, plot, subplot, uniqueID,
+                uniqueID = paste(site, project, plot, subplot, sep = "_")) %>%
+  dplyr::select(year, expyear, site, project, plot, subplot, uniqueID, photopath,
                 carbon, nadd, ncess, fence, burn, rainfall, warm,
-                species, fungroup, abundance, unitAbund, scaleAbund, season.ppt, spei) 
+                species, fungroup, abundance, unitAbund, scaleAbund, season.ppt, spei)
 
 rm(files_ls, df, treat.df, sevwen)
 
