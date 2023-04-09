@@ -20,7 +20,7 @@ files_ls <- drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYH
 #Download the dataset based on the file name in the directory
 drive_download(file = subset(files_ls,name=="SEV_wenndex_biomass_2021.csv"),
                path = "raw_data_GDrive/SEV_wenndex_biomass_2021.csv",
-               overwrite = TRUE)#Overwrite is in included so you can replace older versions
+               overwrite = TRUE) #Overwrite is in included so you can replace older versions
 
 
 #load data from the directory
@@ -31,6 +31,8 @@ unique(sevwen$site)
 # only 1 site--warming site
 
 unique(sevwen$year)
+#2006-2021 (15 years of data)
+
 unique(sevwen$season)
 #Twice a year sampling
 
@@ -50,9 +52,9 @@ unique(sevwen$treatment)
 #N= N addition
 #C=control
 treat.df<-data.frame(treatment=unique(sevwen$treatment),
-                     warm=c("T","T","C","C","T","T","C","C"),
-                     rainfall=c("C","P","P","C","P","C","P","C"),
-                     Nadd=c("C","N","C","N","C","N","N","C"))
+                     warm=c("T","C","C","C","T","C","T","T"),
+                     rainfall=c("C","P","C","P","C","C","P","P"),
+                     Nadd=c("C","C","C","N","N","N","C","N"))
 
 sevwen <- merge.data.frame(sevwen, treat.df, by="treatment")
 
@@ -70,6 +72,11 @@ sev_wen_clean <- sevwen %>%
                 plot = plot, 
                 subplot = quad,   # check if this does make sense (this is correct)
                 abundance = biomass.BM, #biomass based on best model
+                unitAbund = "biomass.BM",
+                scaleAbund = "g/m2",   # check metadata
+                cover = cover/100, #cover was entered as % of 1m^2 
+                unitcover = "cover",
+                scalecover = "m2",
                 trt = treatment,
                 carbon = "0",
                 nadd = Nadd,
@@ -78,8 +85,6 @@ sev_wen_clean <- sevwen %>%
                 burn = "0",
                 rainfall = rainfall, 
                 warm = warm,
-                unitAbund = "biomass",
-                scaleAbund = "g/m2",   # check metadata
                 species = paste(genus, sp.epithet, sep =" "),
                 fungroup = FunctionalGroup,
                 photopath = PhotoPath,
@@ -88,8 +93,8 @@ sev_wen_clean <- sevwen %>%
                 uniqueID = paste(site, project, plot, subplot, sep = "_")) %>%
   dplyr::select(year, expyear, site, project, plot, subplot, uniqueID, photopath,
                 carbon, nadd, ncess, fence, burn, rainfall, warm,
-                species, fungroup, abundance, unitAbund, scaleAbund, season.ppt, spei)
+                species, fungroup, abundance, unitAbund, scaleAbund, cover, unitcover, scalecover, season.ppt, spei)
 
 rm(files_ls, df, treat.df, sevwen)
 
-#write.csv(sev_wen_clean, "../data/sev_wen_clean.csv")
+#write.csv(sev_wen_clean, "../data/sev_wen_clean.csv") #Note: need to update the csv file with the new cleaned sev_wen data from this script (link is currently broken)
