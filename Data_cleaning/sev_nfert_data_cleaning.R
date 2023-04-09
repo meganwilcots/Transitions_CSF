@@ -16,9 +16,11 @@ unique(sevnfert$site)
 # only 1 site
 
 unique(sevnfert$treatment)
-# 2 unique trts
+# 2 unique trts: Control (C) and Fertilized (F)
 
 unique(sevnfert$year)
+#2004-2021 (17 years of data)
+
 #Twice a year sampling
 unique(sevnfert$season)
 sevnfert$seas_num<-as.numeric(as.character(recode_factor(sevnfert$season,fall="0.5",spring="0")))
