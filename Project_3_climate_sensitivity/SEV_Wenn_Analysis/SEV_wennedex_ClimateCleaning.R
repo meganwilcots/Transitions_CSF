@@ -13,6 +13,8 @@ drive_ls(as_id("https://drive.google.com/drive/folders/1I_RFbh_YkkYHapP7H0J3gXXk
   dplyr::filter(name == "SEV_wennedex_met_monthly_gap_filled.csv") %>%
   googledrive::drive_download(path=file.path("Data_climate","SEV_Wennedex", "SEV_wennedex_met_monthly_gap_filled.csv"),
                               overwrite = T)
+#automate authentication
+1
 
 #Read in climate data
 wenn.clim<-read.csv(here::here("Data_climate","SEV_Wennedex", "SEV_wennedex_met_monthly_gap_filled.csv"))
