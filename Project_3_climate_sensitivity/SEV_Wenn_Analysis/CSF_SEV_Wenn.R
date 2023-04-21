@@ -55,54 +55,48 @@ AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)
 min(AICc(m.null, m.La,m.Li,m.Qa,m.Qi,m.Ca,m.Ci)[,2])
 #Note: Best model is m.Ca, the next best fit model is m.Ci
 
-
-##Pick up here! 
-
-
 # AR1 - autocorrelation 1, AR2 - autocorrelation 2 to best model from above
 #This is only necessary if expyear includes non-integer numbers
-#int.year <- exp.clim$expyear*2-1 #convert to integer
-#exp.clim$expyear <- int.year
+int.year <- exp.clim$expyear*2-1 #convert to integer
+exp.clim$expyear <- int.year
 
 #Fit temporal autocorrelation models
-m.AR1<-update(m.Ca,correlation=corAR1(form=~expyear))
-m.AR2<-update(m.Ca,correlation=corARMA(form=~expyear,p=2))
+m.AR1<-update(m.Ca,correlation=corAR1(form=~1 | uniqueID/expyear))  #updated to nest exp. year within uniqueID
+m.AR2<-update(m.Ca,correlation=corARMA(form=~1 | uniqueID/expyear,p=2)) #updated to nest exp. year within uniqueID
 
 # model selection
 AICc(m.Ca,m.AR1,m.AR2)
-# best model m.AR2
+# best model is m.AR2
+
 rsquared(m.AR2)
 #Marginal R2:  the proportion of variance explained by the fixed factor(s) alone
 #Conditional R2: he proportion of variance explained by both the fixed and random factors
 
 #Evaluate model assumptions
-plot(m.AR2)#a bit funnel shaped
-qqPlot(residuals(m.AR2))
-hist(residuals(m.AR2))
+plot(m.AR2)#a bit funnel shaped; going into negatives
+qqPlot(residuals(m.AR2)) #Check data:  why do the two outliers have the same uniqueID
+hist(residuals(m.AR2)) #data looks skewed, maybe log transform?
 
-#Do sketchy frequentist tests on best model
-anova(m.AR2,type="marginal")#F test
-Anova(m.AR2,type=2)# Chisq test. Mostly similar except for significance of "SPEI.comp"
+#Do sketchy Frequentist tests on best model
+anova(m.AR2,type="marginal") #F test
+anova(m.AR2,type="sequential") #Type 2 Anova
+# I(spei^3) is highly significant in both anovas. In the type 2 anova, only I(spei^3)
+# is significant, while in the F-test anova, spei and I(spei^3) are highly significant
+
+
+##Pick up here!
 
 #Param estimates and post-hoc pairwise comparisons
-emtrends(m.AR2,~ nadd | degree, "SPEI.comp", max.degree = 3)
-pairs(emtrends(m.AR2,~ nadd | degree , "SPEI.comp", max.degree = 3))
+emtrends(m.AR2,~ nadd | degree, "spei", max.degree = 3)
+pairs(emtrends(m.AR2,~ nadd | degree , "spei", max.degree = 3))
 #The quadratic slope is the most different
 
-#Visualize CSF results---------------------
-# get a plot of estimated values from the model, by each depth
-# visreg with ggplot graphics
-visreg(fit=m.AR2,"SPEI.comp",type="conditional",by="nadd",gg=TRUE,partial=F,rug=F)+ 
-  geom_point(aes(x=SPEI.comp,y=tot.cover,col=year),alpha=0.2,data=exp.clim)+
-  theme_bw()+
-  labs(x="SPEI",
-       y="Aboveground total cover")
 
-#Alternative visualization code if the above doesn't work
+#Alternative visualization code
 exp.clim$predicted<-predict(m.AR2, exp.clim)
-ggplot(exp.clim, aes(x=SPEI.comp, y=predicted)) +
+ggplot(exp.clim, aes(x=spei, y=predicted)) +
   facet_wrap(~nadd)+
-  geom_point(aes(x=SPEI.comp, y=tot.cover), color="gray60", size=0.5) +
+  geom_point(aes(x=spei, y=tot.cover), color="gray60", size=0.5) +
   geom_smooth(aes(y=predicted), color="gray20")+
   theme_bw()+
   theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+ 
