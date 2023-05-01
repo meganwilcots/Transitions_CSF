@@ -1,4 +1,6 @@
 #This script cleans the SEV_WENNDEx Climate Data
+#and is used to add mean and max annual temp air temp and precip
+#data from station 40
 
 library(here)
 library(vegan)
